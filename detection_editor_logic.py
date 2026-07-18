@@ -1878,12 +1878,16 @@ class CoreLogicMixin:
         """戻り値: 更新を適用してアプリの再起動処理に入ればTrue、それ以外はFalse。"""
         root = self._repo_root()
 
-        rc, _, _ = self._run_git("rev-parse", "--is-inside-work-tree", cwd=root)
+        rc, out, err = self._run_git("rev-parse", "--is-inside-work-tree", cwd=root)
         if rc != 0:
             if not silent:
                 QtWidgets.QMessageBox.warning(
                     self, "更新確認",
-                    "このコピーはgit管理されていません。\ngit cloneで取得したフォルダで実行してください。"
+                    "このコピーはgit管理されていないか、確認中にエラーが発生しました。\n"
+                    "git cloneで取得したフォルダで実行してください。\n\n"
+                    f"確認先フォルダ: {root}\n"
+                    f"戻り値: {rc}\n"
+                    f"詳細: {err or out or '(メッセージなし)'}"
                 )
             return False
 
