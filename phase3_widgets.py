@@ -653,6 +653,8 @@ class P3Timeline(QGraphicsView):
                 _btn_row.addStretch(1)
                 _btn_cancel = QPushButton("Cancel")
                 _btn_yes = QPushButton("Yes")
+                _btn_cancel.setCursor(Qt.PointingHandCursor)
+                _btn_yes.setCursor(Qt.PointingHandCursor)
                 _btn_cancel.setStyleSheet(
                     "QPushButton{background-color:#0a7aff;color:white;border-radius:5px;padding:4px 16px;}"
                     "QPushButton:hover{background-color:#0062d4;}"
