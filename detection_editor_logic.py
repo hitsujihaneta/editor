@@ -1830,12 +1830,38 @@ class CoreLogicMixin:
         """このスクリプトが置かれているフォルダ（gitリポジトリのルート想定）"""
         return os.path.dirname(os.path.abspath(__file__))
 
+    def _find_git_exe(self) -> str:
+        """git実行ファイルのパスを解決する。
+
+        PATH上に"git"が無くても（例えば有効なconda環境にgitが入っておらず、
+        別の環境やシステムにしか入っていない場合）よくあるインストール場所を
+        直接探すことで、PATHの状態に依存しないようにする。"""
+        if getattr(self, '_git_exe_cache', None):
+            return self._git_exe_cache
+
+        import shutil
+        found = shutil.which("git")
+        if not found:
+            candidates = [
+                r"C:\Program Files\Git\cmd\git.exe",
+                r"C:\Program Files\Git\bin\git.exe",
+                r"C:\Program Files (x86)\Git\cmd\git.exe",
+                os.path.expandvars(r"%LOCALAPPDATA%\Programs\Git\cmd\git.exe"),
+                "/usr/bin/git", "/usr/local/bin/git", "/opt/homebrew/bin/git",
+            ]
+            for c in candidates:
+                if c and os.path.isfile(c):
+                    found = c
+                    break
+        self._git_exe_cache = found or "git"
+        return self._git_exe_cache
+
     def _run_git(self, *args, cwd=None, timeout=30):
         """gitコマンドを実行し (returncode, stdout, stderr) を返す"""
         import subprocess
         try:
             result = subprocess.run(
-                ["git", *args],
+                [self._find_git_exe(), *args],
                 cwd=cwd or self._repo_root(),
                 capture_output=True, text=True, timeout=timeout,
                 encoding="utf-8", errors="replace",
