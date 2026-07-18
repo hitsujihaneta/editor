@@ -248,6 +248,28 @@ if __name__ == '__main__':
 
     app = QtWidgets.QApplication([])
 
+    # OSのテーマに左右されず常にダーク基調で統一する（Windowsのデフォルトスタイルは
+    # OSのダークモード設定を追随しないため、明示的にFusionスタイル+ダークパレットを適用する）
+    app.setStyle("Fusion")
+    dark_palette = QtGui.QPalette()
+    dark_palette.setColor(QtGui.QPalette.Window, QtGui.QColor(45, 45, 45))
+    dark_palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor(220, 220, 220))
+    dark_palette.setColor(QtGui.QPalette.Base, QtGui.QColor(30, 30, 30))
+    dark_palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(45, 45, 45))
+    dark_palette.setColor(QtGui.QPalette.ToolTipBase, QtGui.QColor(45, 45, 45))
+    dark_palette.setColor(QtGui.QPalette.ToolTipText, QtGui.QColor(220, 220, 220))
+    dark_palette.setColor(QtGui.QPalette.Text, QtGui.QColor(220, 220, 220))
+    dark_palette.setColor(QtGui.QPalette.Button, QtGui.QColor(53, 53, 53))
+    dark_palette.setColor(QtGui.QPalette.ButtonText, QtGui.QColor(220, 220, 220))
+    dark_palette.setColor(QtGui.QPalette.BrightText, QtGui.QColor(255, 80, 80))
+    dark_palette.setColor(QtGui.QPalette.Link, QtGui.QColor(90, 160, 255))
+    dark_palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(42, 130, 218))
+    dark_palette.setColor(QtGui.QPalette.HighlightedText, QtGui.QColor(255, 255, 255))
+    dark_palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.Text, QtGui.QColor(127, 127, 127))
+    dark_palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.ButtonText, QtGui.QColor(127, 127, 127))
+    dark_palette.setColor(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText, QtGui.QColor(127, 127, 127))
+    app.setPalette(dark_palette)
+
     # ベースフォントはポイント指定（DPIに追随）
     base_font = QtGui.QFont("Noto Sans JP", 10)
     app.setFont(base_font)
