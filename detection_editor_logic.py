@@ -1922,7 +1922,14 @@ class CoreLogicMixin:
 
         rc, out, err = self._run_git("rev-parse", "--is-inside-work-tree", cwd=root)
         if rc != 0:
-            if not silent:
+            if silent:
+                # 「最新版」「未コミット変更あり」等は自動チェックでは無音のままにするが、
+                # git自体が使えない/見つからない状況は気付けないと困るので短く知らせる
+                QtWidgets.QMessageBox.warning(
+                    self, "更新確認",
+                    "更新を確認できませんでした（gitが見つからないか、このコピーがgit管理されていません）。"
+                )
+            else:
                 QtWidgets.QMessageBox.warning(
                     self, "更新確認",
                     "このコピーはgit管理されていないか、確認中にエラーが発生しました。\n"
@@ -1936,7 +1943,12 @@ class CoreLogicMixin:
         # 自動チェック時はネットワークが遅い/繋がらない場合に起動が止まらないよう短めのタイムアウトにする
         rc, _, err = self._run_git("fetch", "origin", "main", cwd=root, timeout=6 if silent else 30)
         if rc != 0:
-            if not silent:
+            if silent:
+                QtWidgets.QMessageBox.warning(
+                    self, "更新確認",
+                    "更新を確認できませんでした（サーバーに接続できません）。"
+                )
+            else:
                 QtWidgets.QMessageBox.warning(self, "更新確認", f"リモートの取得に失敗しました:\n{err}")
             return False
 
