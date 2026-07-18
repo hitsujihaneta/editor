@@ -1,8 +1,10 @@
 import os
+import sys
 import glob
 import json
 import re
 import hashlib
+import time
 from typing import Dict, List, Optional, Tuple
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtCore import QTimer, Qt
@@ -140,6 +142,7 @@ class DetectionEditor(UIBuilderMixin, FileIOMixin, CoreLogicMixin, QtWidgets.QWi
         self.hover_box_index: Optional[int] = None
         self.image_folder: str = ""
         self.last_txt_import_folder: str = ""  # 検出結果txtを読み込んだフォルダ（保存先のデフォルトに使用）
+        self._last_save_time: Optional[float] = None  # 直近の保存成功時刻（終了時の保存確認に使用）
         self._initial_fit_done: bool = False
         self._min_zoom_scale: float = 0.0  # 初期フィット時のスケール（最小ズーム制限用）
 
@@ -224,11 +227,24 @@ class DetectionEditor(UIBuilderMixin, FileIOMixin, CoreLogicMixin, QtWidgets.QWi
                 self.content_splitter.setSizes([sidebar_w, total - sidebar_w])
 
     def closeEvent(self, event):
-        # 終了時の自動保存を削除
         # 再生タイマーを停止
         if self.is_playing:
             self.play_timer.stop()
+
+        # 直近30秒以内に保存された形跡が無ければ、保存するか確認する
+        if self.detections and (
+            self._last_save_time is None or time.time() - self._last_save_time > 30
+        ):
+            if self._ask_confirm(
+                "保存の確認",
+                "直近30秒以内に保存された形跡がありません。\n保存しますか？",
+                yes_text="保存する", no_text="保存しない",
+            ):
+                self.show_save_dialog()
+
         event.accept()
+        # ウィンドウを閉じたら、起動元のターミナル/コンソールも閉じる
+        self._close_host_terminal()
 
 
 
@@ -293,6 +309,21 @@ if __name__ == '__main__':
             background-color: #3a3a3a;
             color: #777;
             border-color: #4a4a4a;
+        }
+        /* Yes/OK側（そのダイアログの既定アクション）は水色で目立たせる。
+           個別に setStyleSheet() 済みのボタンはそちらが優先されるので影響しない。 */
+        QPushButton:default {
+            background-color: #4FC3F7;
+            color: #0a2a3a;
+            border: 1px solid #4FC3F7;
+            font-weight: bold;
+        }
+        QPushButton:default:hover {
+            background-color: #74D1FA;
+            border-color: #74D1FA;
+        }
+        QPushButton:default:pressed {
+            background-color: #2FA8DE;
         }
     """)
 

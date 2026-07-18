@@ -5,6 +5,7 @@ import re
 import csv
 import hashlib
 import datetime
+import time
 from typing import Dict, List, Optional, Tuple
 from PyQt5 import QtWidgets, QtCore
 from models import Interval, BoxList as Box
@@ -12,6 +13,10 @@ from models import Interval, BoxList as Box
 
 class FileIOMixin:
     """DetectionEditorのファイルI/O関連メソッド群"""
+
+    def _mark_saved(self):
+        """保存が成功した時刻を記録する（終了時の保存確認に使用）"""
+        self._last_save_time = time.time()
 
     def _json_path_for_image(self, img_path: str):
         return os.path.splitext(img_path)[0] + ".json"
@@ -642,6 +647,7 @@ class FileIOMixin:
         progress.close()
         
         self._save_meta()
+        self._mark_saved()
         QtWidgets.QMessageBox.information(self, "保存完了", f"JSON形式で{saved_count}ファイル保存しました（全{total}画像）。")
 
     # -------- TXT形式で保存 (一括ファイル) --------
@@ -702,6 +708,7 @@ class FileIOMixin:
                         QtWidgets.QApplication.processEvents()
             
             progress.close()
+            self._mark_saved()
             QtWidgets.QMessageBox.information(self, "保存完了", f"TXT形式（一括ファイル）で保存しました:\n{save_path}")
         except Exception as e:
             progress.close()
@@ -782,9 +789,10 @@ class FileIOMixin:
                 QtWidgets.QApplication.processEvents()
         
         progress.close()
+        self._mark_saved()
         QtWidgets.QMessageBox.information(
-            self, 
-            "保存完了", 
+            self,
+            "保存完了",
             f"TXT形式（フレームごと）で{saved_count}ファイル保存しました。:\n{save_folder}"
         )
 
@@ -944,6 +952,7 @@ class FileIOMixin:
             return
         try:
             self._export_csv_to(path)
+            self._mark_saved()
             QtWidgets.QMessageBox.information(self, "保存完了", f"CSVを保存しました:\n{path}")
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "保存エラー", str(e))
@@ -1050,6 +1059,7 @@ class FileIOMixin:
             return
         try:
             self._export_deepocsort_txt_to(path)
+            self._mark_saved()
             QtWidgets.QMessageBox.information(self, "保存完了", f"DeepOCSORT形式で保存しました:\n{path}")
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "保存エラー", str(e))
@@ -1080,6 +1090,7 @@ class FileIOMixin:
             return
         try:
             self._export_labelme_to(directory)
+            self._mark_saved()
             QtWidgets.QMessageBox.information(self, "保存完了", f"LabelMe JSONを保存しました:\n{directory}")
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "保存エラー", str(e))
@@ -1150,6 +1161,7 @@ class FileIOMixin:
             json_dir = os.path.join(out_dir, "labelme_json")
             os.makedirs(json_dir, exist_ok=True)
             self._export_labelme_to(json_dir)
+            self._mark_saved()
             QtWidgets.QMessageBox.information(
                 self, "エクスポート完了",
                 f"CSV・TXT・JSONを一括保存しました:\n{out_dir}"

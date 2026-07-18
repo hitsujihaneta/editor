@@ -656,12 +656,14 @@ class P3Timeline(QGraphicsView):
                 _btn_cancel.setCursor(Qt.PointingHandCursor)
                 _btn_yes.setCursor(Qt.PointingHandCursor)
                 _btn_cancel.setStyleSheet(
-                    "QPushButton{background-color:#0a7aff;color:white;border-radius:5px;padding:4px 16px;}"
-                    "QPushButton:hover{background-color:#0062d4;}"
+                    "QPushButton{background-color:#4a4a4a;color:#eee;border-radius:5px;padding:4px 16px;}"
+                    "QPushButton:hover{background-color:#666;}"
                 )
                 _btn_yes.setStyleSheet(
-                    "QPushButton{background-color:#6c6c6c;color:white;border-radius:5px;padding:4px 16px;}"
-                    "QPushButton:hover{background-color:#555;}"
+                    "QPushButton{background-color:#4FC3F7;color:#0a2a3a;border-radius:5px;"
+                    "padding:4px 16px;font-weight:bold;}"
+                    "QPushButton:hover{background-color:#74D1FA;}"
+                    "QPushButton:pressed{background-color:#2FA8DE;}"
                 )
                 _btn_row.addWidget(_btn_cancel)
                 _btn_row.addWidget(_btn_yes)
