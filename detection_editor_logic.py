@@ -1842,7 +1842,26 @@ class CoreLogicMixin:
         未コミットの変更があるなど「今アクションできない」状況ではポップアップを出さず、
         本当に適用可能な更新がある時だけ確認ダイアログを表示する。
         メニューから手動実行した場合（silent=False）は、どの状況でも結果を知らせる。
+
+        どちらの場合も「確認中」であることが分かるよう、
+        メニューの表示を一時的に「更新を確認中...」に変え、待機カーソルを出す。
         """
+        act = getattr(self, 'act_check_update', None)
+        orig_text = act.text() if act else None
+        if act:
+            act.setEnabled(False)
+            act.setText("更新を確認中...")
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        QtWidgets.QApplication.processEvents()
+        try:
+            self._check_for_updates_impl(silent=silent)
+        finally:
+            QtWidgets.QApplication.restoreOverrideCursor()
+            if act:
+                act.setEnabled(True)
+                act.setText(orig_text)
+
+    def _check_for_updates_impl(self, silent: bool):
         root = self._repo_root()
 
         rc, _, _ = self._run_git("rev-parse", "--is-inside-work-tree", cwd=root)
