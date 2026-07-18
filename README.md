@@ -41,11 +41,6 @@ python main.py
 
 - **Windows**: `start.bat` をダブルクリック
 - **Mac**: `start.command` をダブルクリック
-  - 初回のみ、ターミナルで実行権限を付与する必要があります:
-    ```bash
-    chmod +x start.command
-    ```
-    （Finderからのダブルクリックだけでは実行できないための一回限りの準備です）
 
 どちらも conda環境 `labelme` があれば自動で使い、無ければシステムのPython(`python3`)にフォールバックします。
 
