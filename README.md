@@ -18,7 +18,4 @@
 
 ## イメージ
 <img width="1440" height="900" alt="検出フェーズ" src="https://github.com/user-attachments/assets/46a56456-fb62-4df6-9919-17b4977b97bc" />
-<img width="1440" height="900" alt="追跡フェーズ" src="https://github.com/user-attachments/assets/a8f2cf34-c4ad-4fec-9670-3e365d48417b" />
-
-
-※今後，モジュール化を検討しております
+<img width="1440" height="900" alt="追跡フェーズ" src="https://github.com/user-attachments/assets/a8f2cf34-c4ad-4fec-9670-3e365d48417b" />
