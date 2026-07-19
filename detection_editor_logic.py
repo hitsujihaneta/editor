@@ -118,40 +118,17 @@ class CoreLogicMixin:
         return result["yes"]
 
     def _play_next_frame(self):
-        """再生時に次のフレームに進む"""
+        """再生時に次のフレームに進む。
+        倍速はタイマー間隔（original_fps × playback_speed）だけで表現し、
+        フレームは間引かず1枚ずつ全て表示する。"""
         last = len(self.image_paths) - 1
-
-        if self.playback_speed >= 3.0:
-            # 3倍速以上：パターンで間引き
-            # 3倍速: 1個表示・2個スキップ → 1,4,7,10...
-            # 5倍速: 2個表示・3個スキップ → 1,2,5,6,10,11...
-            step = self._frame_skip_step(self.current_frame_index)
-        else:
-            step = 1
-
-        self.current_frame_index = min(self.current_frame_index + step, last)
+        self.current_frame_index = min(self.current_frame_index + 1, last)
         self._load_image_fast()
 
         if self.current_frame_index >= last:
             self.toggle_play_pause()
 
-    def _frame_skip_step(self, current: int) -> int:
-        """5倍速時の次フレームへの増分を返す（2表示・3スキップのパターン）
-        例）speed=5, show=2 のとき
-          pos=0 → +1（frame 0→1）
-          pos=1 → +4（frame 1→5）  ← グループ末尾からジャンプ
-          pos=2,3,4 → 途中から入った場合の補正（次グループ先頭へ）
-        """
-        speed = int(self.playback_speed)   # 5
-        show  = max(1, round(speed * 1 / 5))  # 5倍速 → 1, 3倍速 → 1
-        pos   = current % speed
-        if pos < show - 1:
-            return 1              # 表示ゾーン内 → 次も表示
-        elif pos == show - 1:
-            return speed - pos    # 表示ゾーン末尾 → 次グループ先頭へジャンプ
-        else:
-            return speed - pos    # スキップゾーン（途中開始の補正）
-    
+
     def _load_image_fast(self):
         """再生時の高速画像読み込み（進捗表示更新なし、キャッシュ使用、テキストなし）"""
         if not self.image_paths:
