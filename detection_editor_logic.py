@@ -315,7 +315,8 @@ class CoreLogicMixin:
             self._update_label_check_indicator()
 
     def _update_label_check_indicator(self):
-        """現在フレームのラベル数を確認し、インジケーター色とlc_tableのハイライトを更新する"""
+        """現在フレームのラベル数を確認し、インジケーター色とlc_tableのハイライトを更新する。
+        ラベル数が揃った（OKになった）フレームは、その場でNG一覧から取り除く。"""
         if not hasattr(self, 'label_check_indicator') or not self.label_check_mode:
             return
         if not self.image_paths:
@@ -324,16 +325,59 @@ class CoreLogicMixin:
         _, frame_number = self.image_paths[self.current_frame_index]
         target = self.lc_count_spin.value() if hasattr(self, 'lc_count_spin') else 11
         actual = len(self.detections.get(frame_number, []))
-        color = "#00CC00" if actual == target else "#FF2222"
+        is_ok = actual == target
+        color = "#00CC00" if is_ok else "#FF2222"
         self.label_check_indicator.setStyleSheet(
             f"background-color: {color}; border: 2px solid #333; border-radius: 3px;"
         )
+        if is_ok:
+            self._remove_lc_row_for_frame(frame_number)
         self._update_lc_table_highlight(frame_number)
 
+    def _remove_lc_row_for_frame(self, frame_number):
+        """lc_table / phase2_table から、ラベル数が揃った指定フレームの行を削除し、
+        件数サマリー表示を更新する。"""
+        removed = False
+        for table in (getattr(self, 'lc_table', None), getattr(self, 'phase2_table', None)):
+            if table is None:
+                continue
+            for row in range(table.rowCount()):
+                item = table.item(row, 0)
+                if not item:
+                    continue
+                fn = item.data(QtCore.Qt.UserRole)
+                if fn is None:
+                    try:
+                        fn = int(item.text())
+                    except ValueError:
+                        continue
+                if fn == frame_number:
+                    table.removeRow(row)
+                    removed = True
+                    break
+        if not removed or not hasattr(self, 'phase2_table') or not self.image_paths:
+            return
+        total = len(self.image_paths)
+        ng = self.phase2_table.rowCount()
+        ok = total - ng
+        target_count = self.lc_count_spin.value() if hasattr(self, 'lc_count_spin') else 0
+        if ng == 0:
+            text = f"✅ 全 {total} フレームが {target_count} 個で一致しています。"
+            style = "color: green; font-size: 11px;"
+        else:
+            text = f"⚠️ {ng} / {total} フレームで不一致（OK: {ok} / NG: {ng}）"
+            style = "color: red; font-size: 11px;"
+        for label_attr in ('phase2_summary_label', 'lc_summary_label'):
+            label = getattr(self, label_attr, None)
+            if label:
+                label.setText(text)
+                label.setStyleSheet(style)
+
     def _update_lc_table_highlight(self, frame_number):
-        """lc_table で現在フレームの行を選択・スクロール（表にない場合は選択解除）"""
+        """lc_table で現在フレームの行だけを選択・スクロール（他の行の選択は解除する）"""
         if not hasattr(self, 'lc_table'):
             return
+        self.lc_table.clearSelection()
         for row in range(self.lc_table.rowCount()):
             item = self.lc_table.item(row, 0)
             if not item:
@@ -348,7 +392,6 @@ class CoreLogicMixin:
                 self.lc_table.selectRow(row)
                 self.lc_table.scrollTo(self.lc_table.model().index(row, 0))
                 return
-        self.lc_table.clearSelection()
 
     def _run_label_check_from_phase1(self):
         """Phase1 パネルからチェック実行"""
