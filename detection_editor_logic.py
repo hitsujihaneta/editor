@@ -779,9 +779,8 @@ class CoreLogicMixin:
             return
         self.id_list.append(new_id)
         self._ensure_color_map()
-        self.rebuild_id_list_ui()
         self._save_meta()
-        self._refresh_phase4_id_combo()
+        self.set_id(new_id)  # 追加したIDに自動で切り替える（rebuild_id_list_ui等も内部で行う）
 
     def set_id(self, new_id: str):
         self.current_id = str(new_id)
