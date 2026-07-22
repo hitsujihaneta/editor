@@ -12,7 +12,7 @@ from PyQt5.QtGui import QColor, QFont, QGuiApplication
 
 from models import (
     FrameNumber, BoxList, Interval, Span, Lane, Box,
-    EditorStore, _HEX_PALETTE, _PALETTE, _color_for_id,
+    EditorStore, _HEX_PALETTE, _PALETTE,
 )
 from phase3_widgets import P3ImageView, P3Timeline, P3ControlPanel, Phase3Widget
 from dialogs import IntervalEditor, FPSSettingsDialog, LayoutAdjusterDialog
@@ -56,6 +56,14 @@ class DetectionEditor(UIBuilderMixin, FileIOMixin, CoreLogicMixin, QtWidgets.QWi
     @image_folder.setter
     def image_folder(self, val: str):
         self.store.image_folder = val
+
+    @property
+    def id_color_map(self) -> Dict[str, int]:
+        return self.store.id_color_map
+
+    @id_color_map.setter
+    def id_color_map(self, val: Dict[str, int]):
+        self.store.id_color_map = val
 
     def __init__(self):
         super().__init__()

@@ -678,6 +678,10 @@ class CoreLogicMixin:
                 self.load_images()
             if not self.image_paths:
                 return
+        # Phase3が色を参照する前に、検出フェーズ側の色割り当てを済ませておく
+        # （同じIDが両フェーズで違う色にならないようにするため）
+        self._ensure_color_map()
+
         # Phase3移行前にID追跡の状態を保存し、一時的に無効化
         self._phase4_was_active = getattr(self, 'phase4_active', False)
         if getattr(self, 'phase4_active', False):

@@ -1,4 +1,5 @@
 import re
+import hashlib
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from PyQt5.QtCore import Qt
@@ -17,6 +18,19 @@ def natural_sort_key(s):
     id_listの並び順を常にこのキーで統一することで、サイドバー・追跡フェーズなど
     どこで表示してもID順がバラつかないようにする。"""
     return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(s))]
+
+
+def color_index_for_id(id_value: str, palette_len: int, used_indices) -> int:
+    """指定IDに割り当てるパレット色番号を決める。
+    未使用の最小インデックスがあればそれを、無ければIDのハッシュ値から
+    決定的に選ぶ（同じIDなら常に同じ色になる）。
+    検出フェーズ・追跡フェーズの両方でこの関数を使うことで、色の割り当て
+    ロジックを一本化し、同じIDが異なる色で表示されないようにする。"""
+    free_idx = next((i for i in range(palette_len) if i not in used_indices), None)
+    if free_idx is not None:
+        return free_idx
+    md5 = hashlib.md5(str(id_value).encode("utf-8")).hexdigest()
+    return int(md5, 16) % palette_len
 
 
 # =====================================================================
@@ -56,13 +70,6 @@ _HEX_PALETTE = [
 _PALETTE = [QColor(c) for c in _HEX_PALETTE]
 
 
-def _color_for_id(id_value: str, id_list: List[str]) -> QColor:
-    """id_listの順番でカラーパレットを割り当て"""
-    try:
-        idx = id_list.index(id_value)
-    except ValueError:
-        idx = abs(hash(id_value))
-    return _PALETTE[idx % len(_PALETTE)]
 
 
 # =====================================================================
@@ -137,3 +144,4 @@ class EditorStore:
         self.image_paths: List[Tuple] = []
         self.image_folder: str = ""
         self.shared_frame: int = 0  # フェーズ間で共有するフレーム番号（原フレーム番号）
+        self.id_color_map: Dict[str, int] = {}  # ID→パレット色番号（検出・追跡フェーズで共有し、同じIDは同じ色にする）

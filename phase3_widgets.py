@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (
     QSizePolicy, QSplitter,
     QVBoxLayout, QWidget,
 )
-from models import (Box, Lane, Span, EditorStore, _PALETTE, _color_for_id,
+from models import (Box, Lane, Span, EditorStore, _PALETTE, color_index_for_id,
                     ZOOM_PRESETS, ZOOM_DEFAULT_TEXT, zoom_combo_value, apply_tracking_zoom)
 
 
@@ -937,14 +937,27 @@ class Phase3Widget(QWidget):
     # ------------------------------------------------------------------
     # 内部変換
     # ------------------------------------------------------------------
+    def _lane_color_for_id(self, id_value: str) -> QColor:
+        """指定IDの色をstore.id_color_map（検出フェーズと共有）から取得する。
+        未登録なら空いている最小インデックス、無ければIDのハッシュ値から
+        決定的に割り当て、以後も同じ色になるようstoreに書き戻す。
+        検出フェーズの色決定ロジックと共通化することで、同じIDが両フェーズで
+        違う色にならないようにする。"""
+        cmap = self.store.id_color_map
+        idx = cmap.get(id_value)
+        if idx is None or not (0 <= idx < len(_PALETTE)):
+            used = {i for i in cmap.values() if 0 <= i < len(_PALETTE)}
+            idx = color_index_for_id(id_value, len(_PALETTE), used)
+            cmap[id_value] = idx
+        return _PALETTE[idx]
+
     def _build_lanes_from_id_list(self, id_list: List[str]):
         """id_listからLaneリストを構築"""
         self.lanes = []
-        for i, id_value in enumerate(id_list):
-            color = _PALETTE[i % len(_PALETTE)]
+        for id_value in id_list:
             self.lanes.append(Lane(
                 label=f"ID {id_value}",
-                color=color,
+                color=self._lane_color_for_id(id_value),
                 spans=[],
                 id_value=id_value,
             ))
@@ -969,8 +982,7 @@ class Phase3Widget(QWidget):
                     # 未知IDはid_listに追加してレーンも追加
                     lane_idx = len(self.lanes)
                     id_to_lane[label] = lane_idx
-                    color = _PALETTE[lane_idx % len(_PALETTE)]
-                    self.lanes.append(Lane(f"ID {label}", color, [], label))
+                    self.lanes.append(Lane(f"ID {label}", self._lane_color_for_id(label), [], label))
                     self._lanes_all = list(self.lanes)
                 x1 = float(x); y1 = float(y)
                 x2 = x1 + float(w); y2 = y1 + float(h)
