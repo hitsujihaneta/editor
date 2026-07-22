@@ -256,7 +256,7 @@ class UIBuilderMixin:
         playback_layout.addWidget(speed_label)
         
         self.speed_combo = QtWidgets.QComboBox()
-        self.speed_combo.addItems(["0.5x", "1x", "2x", "3x", "5x"])
+        self.speed_combo.addItems(["0.5x", "1x", "2x", "3x", "4x", "5x"])
         self.speed_combo.setCurrentText("2x")  # デフォルト2倍速
         self.speed_combo.currentTextChanged.connect(self._on_speed_changed)
         self.speed_combo.setMinimumWidth(self.dp(70))

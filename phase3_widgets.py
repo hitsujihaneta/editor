@@ -1117,9 +1117,22 @@ class Phase3Widget(QWidget):
     # ------------------------------------------------------------------
     # 再生
     # ------------------------------------------------------------------
+    def _step_and_interval(self):
+        """速度選択に応じた (1ティックで進めるフレーム数, タイマー間隔ms) を返す。
+        4倍速だけは「2枚に1枚スキップ」して実質4倍速にする（検出フェーズと同じ仕様）。"""
+        text = self.ctrl.speedCombo.currentText()
+        if text == "4x":
+            step = 2
+            base_factor = 2.0
+        else:
+            step = 1
+            base_factor = _P3_SPEED_FACTORS.get(text, 1.0)
+        interval = max(1, int(1000 / self.fps / base_factor))
+        return step, interval
+
     def _get_timer_interval(self) -> int:
-        factor = _P3_SPEED_FACTORS.get(self.ctrl.speedCombo.currentText(), 1.0)
-        return max(1, int(1000 / self.fps / factor))
+        _, interval = self._step_and_interval()
+        return interval
 
     def _toggle_play(self):
         if self.timer.isActive():
@@ -1153,7 +1166,8 @@ class Phase3Widget(QWidget):
 
     def _on_tick(self):
         if self.current_frame < self.total_frames - 1:
-            self.current_frame += 1
+            step, _ = self._step_and_interval()
+            self.current_frame = min(self.current_frame + step, self.total_frames - 1)
             self.mainView.set_frame(self.current_frame)
             if self.current_frame % 10 == 0:
                 self.timeline.update_playhead(self.current_frame)

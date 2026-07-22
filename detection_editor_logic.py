@@ -118,12 +118,25 @@ class CoreLogicMixin:
         dlg.exec_()
         return result["yes"]
 
+    def _step_and_interval_for_speed(self, speed: float) -> Tuple[int, int]:
+        """倍速選択に応じた (1ティックで進めるフレーム数, タイマー間隔ms) を返す。
+        通常はフレームを間引かず、タイマー間隔だけで倍速を表現する。
+        4倍速だけは「2枚に1枚スキップ」して実質4倍速にする専用の見せ方にする
+        （間隔は2倍速相当まで短縮し、1ティックで2フレーム進めることで 2×2=4 倍速にする）。"""
+        if speed == 4.0:
+            step = 2
+            base_speed = 2.0
+        else:
+            step = 1
+            base_speed = speed
+        interval = max(1, int(1000 / (self.original_fps * base_speed)))
+        return step, interval
+
     def _play_next_frame(self):
-        """再生時に次のフレームに進む。
-        倍速はタイマー間隔（original_fps × playback_speed）だけで表現し、
-        フレームは間引かず1枚ずつ全て表示する。"""
+        """再生時に次のフレームに進む。"""
         last = len(self.image_paths) - 1
-        self.current_frame_index = min(self.current_frame_index + 1, last)
+        step, _ = self._step_and_interval_for_speed(self.playback_speed)
+        self.current_frame_index = min(self.current_frame_index + step, last)
         self._load_image_fast()
 
         if self.current_frame_index >= last:
@@ -211,10 +224,8 @@ class CoreLogicMixin:
         
         if self.is_playing:
             self.play_pause_btn.setText("⏸ 停止")
-            # 再生速度 = 元のFPS × 倍速
-            target_fps = self.original_fps * self.playback_speed
-            interval = int(1000 / target_fps)  # ミリ秒単位のインターバル
-            print(f"[再生開始] 倍速={self.playback_speed}x, 目標FPS={target_fps}, インターバル={interval}ms")
+            _, interval = self._step_and_interval_for_speed(self.playback_speed)
+            print(f"[再生開始] 倍速={self.playback_speed}x, インターバル={interval}ms")
             self._bbox_items = []        # 再生開始：管理リストを初期化
             self._play_pixmap_item = None
             self.play_timer.start(interval)
@@ -232,11 +243,9 @@ class CoreLogicMixin:
             speed_str = text.replace('x', '')
             new_speed = float(speed_str)
             self.playback_speed = new_speed
-            
-            # デバッグ出力
-            target_fps = self.original_fps * self.playback_speed
-            interval = int(1000 / target_fps)
-            print(f"[速度変更] {text} → 倍速={new_speed}, 目標FPS={target_fps}, インターバル={interval}ms")
+
+            _, interval = self._step_and_interval_for_speed(new_speed)
+            print(f"[速度変更] {text} → 倍速={new_speed}, インターバル={interval}ms")
             
             # 再生中の場合はタイマーを再起動
             if self.is_playing:
@@ -1861,7 +1870,7 @@ class CoreLogicMixin:
             self.original_fps = new_fps
             # 再生中であれば速度を再適用
             if self.is_playing:
-                interval = int(1000 / max(1, self.original_fps * self.playback_speed))
+                _, interval = self._step_and_interval_for_speed(self.playback_speed)
                 self.play_timer.setInterval(interval)
 
     # ================================================================
