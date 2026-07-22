@@ -22,13 +22,15 @@ class FileIOMixin:
 
     # ================================================================
     # クラッシュ復元用の自動バックアップ
-    # 画像フォルダ内に隠しファイルとして定期保存し、正式な保存とは別に
+    # 読み込み元フォルダ内に隠しファイルとして定期保存し、正式な保存とは別に
     # 直近の作業内容を残しておく（アプリが落ちても直前の状態まで復元できるように）。
     # ================================================================
     def _recovery_file_path(self) -> Optional[str]:
-        if not self.image_folder:
+        # txt等の検出結果を読み込んだ場所があればそちらを優先し、無ければ画像フォルダを使う
+        folder = self.last_txt_import_folder or self.image_folder
+        if not folder:
             return None
-        return os.path.join(self.image_folder, ".marca_autosave.json")
+        return os.path.join(folder, ".marca_autosave.json")
 
     def _autosave_recovery(self):
         """一定間隔で自動的に呼ばれ、作業内容を裏で保存する。
