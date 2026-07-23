@@ -28,8 +28,9 @@
 
 インストール後は、ターミナル / Anaconda Promptを一度閉じて開き直してください（PATHの変更を反映させるため）。
 
-### クローンして起動
+### クローン方法
 ```bash
+任意のフォルダに移動
 git clone https://github.com/hitsujihaneta/MARCA.git
 cd MARCA
 pip install -r requirements.txt
