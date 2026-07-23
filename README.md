@@ -30,8 +30,8 @@
 
 ### クローンして起動
 ```bash
-git clone https://github.com/hitsujihaneta/MARCA_MarkingApplicationForRapidContourAnnotation.git
-cd MARCA_MarkingApplicationForRapidContourAnnotation
+git clone https://github.com/hitsujihaneta/MARCA.git
+cd MARCA
 pip install -r requirements.txt
 python main.py
 ```
