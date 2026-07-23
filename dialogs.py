@@ -41,6 +41,48 @@ class IDVisibilityToggle(QtWidgets.QAbstractButton):
         painter.end()
 
 
+class SettingsDialog(QtWidgets.QDialog):
+    """現在の設定（読み込み元パス・ID色）を確認するためのダイアログ。"""
+
+    def __init__(self, parent: QtWidgets.QWidget):
+        super().__init__(parent)
+        self.setWindowTitle("設定 - 現在の状態")
+        self.resize(420, 420)
+        v = QtWidgets.QVBoxLayout(self)
+
+        def add_path_row(label_text: str, path_value: str):
+            v.addWidget(QtWidgets.QLabel(label_text))
+            edit = QtWidgets.QLineEdit(path_value or "（未読み込み）")
+            edit.setReadOnly(True)
+            edit.setCursorPosition(0)
+            v.addWidget(edit)
+
+        add_path_row("画像フォルダ:", getattr(parent, 'image_folder', '') or "")
+        add_path_row(
+            "検出結果(txt等)の読み込み元:",
+            getattr(parent, 'last_txt_import_folder', '') or "",
+        )
+
+        v.addSpacing(8)
+        v.addWidget(QtWidgets.QLabel("ID色一覧:"))
+        color_list = QtWidgets.QListWidget()
+        id_list = getattr(parent, 'id_list', []) or []
+        for id_ in id_list:
+            color = parent.color_for(id_) if hasattr(parent, 'color_for') else QtGui.QColor("white")
+            item = QtWidgets.QListWidgetItem(str(id_))
+            pix = QtGui.QPixmap(14, 14)
+            pix.fill(color)
+            item.setIcon(QtGui.QIcon(pix))
+            color_list.addItem(item)
+        if not id_list:
+            color_list.addItem("（IDが登録されていません）")
+        v.addWidget(color_list, 1)
+
+        btn_close = QtWidgets.QPushButton("閉じる")
+        btn_close.clicked.connect(self.accept)
+        v.addWidget(btn_close)
+
+
 class IntervalEditor(QtWidgets.QDialog):
     """簡易な出場区間(Intervals)編集ダイアログ。"""
 

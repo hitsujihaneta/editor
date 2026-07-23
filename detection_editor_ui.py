@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
 )
 from phase3_widgets import Phase3Widget
 from models import _PHASE3_AVAILABLE, ZOOM_PRESETS, ZOOM_DEFAULT_TEXT
-from dialogs import FPSSettingsDialog, LayoutAdjusterDialog, IntervalEditor, IDVisibilityToggle
+from dialogs import FPSSettingsDialog, LayoutAdjusterDialog, IntervalEditor, IDVisibilityToggle, SettingsDialog
 
 
 class UIBuilderMixin:
@@ -81,10 +81,17 @@ class UIBuilderMixin:
         self.act_undo.setShortcut("Ctrl+Z")
         self.act_undo.triggered.connect(self.undo_last_operation)
 
-        # --- 更新 メニュー ---
-        update_menu = self.menu_bar.addMenu("🔄 更新")
-        self.act_check_update = update_menu.addAction("更新を確認...")
+        # --- 設定 メニュー ---
+        settings_menu = self.menu_bar.addMenu("⚙️ 設定")
+        act_show_settings = settings_menu.addAction("📋 現在の設定を確認...")
+        act_show_settings.triggered.connect(self._open_settings_dialog)
+        settings_menu.addSeparator()
+        self.act_check_update = settings_menu.addAction("🔄 更新を確認...")
         self.act_check_update.triggered.connect(self.check_for_updates)
+
+    def _open_settings_dialog(self):
+        dlg = SettingsDialog(self)
+        dlg.exec_()
 
     def build_ui(self):
         # メニューバーは __init__ で main_vbox に追加済み
