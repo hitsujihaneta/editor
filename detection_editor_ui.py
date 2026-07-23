@@ -89,6 +89,12 @@ class UIBuilderMixin:
         self.act_check_update = settings_menu.addAction("🔄 更新を確認...")
         self.act_check_update.triggered.connect(self.check_for_updates)
 
+        # --- ヘルプ メニュー ---
+        help_menu = self.menu_bar.addMenu("❓ ヘルプ")
+        self.act_help = help_menu.addAction("使い方 / ショートカット")
+        self.act_help.setCheckable(True)
+        self.act_help.toggled.connect(self._toggle_help_popup)
+
     def _open_settings_dialog(self):
         dlg = SettingsDialog(self)
         dlg.exec_()
@@ -435,23 +441,6 @@ class UIBuilderMixin:
 
         self.sidebar.addWidget(add_id_box, 1)  # stretch=1: 残り空間をすべて占有
 
-        # --- 7. ヘルプボタン（左下固定） ---
-        self._help_btn = QtWidgets.QPushButton("?")
-        self._help_btn.setFixedSize(self.dp(30), self.dp(30))
-        self._help_btn.setCheckable(True)
-        self._help_btn.setToolTip("使い方 / ショートカット")
-        self._help_btn.setStyleSheet("""
-            QPushButton {
-                font-size: 13px; font-weight: bold;
-                border-radius: 15px;
-                background: #555; color: #eee; border: none;
-            }
-            QPushButton:hover  { background: #777; }
-            QPushButton:checked { background: #3a7bd5; }
-        """)
-        self._help_btn.clicked.connect(self._toggle_help_popup)
-        self.sidebar.addWidget(self._help_btn)
-
         return loaded_widget
 
     # -------- Phase2 UI --------
@@ -563,11 +552,11 @@ class UIBuilderMixin:
             self._help_popup.hide()
             return
 
-        # メインウィンドウの左下に配置
+        # メインウィンドウの左下に配置（トリガーがメニューバーに移っても表示位置は変えない）
         popup_size = self._help_popup.sizeHint()
-        btn_pos = self._help_btn.mapToGlobal(QtCore.QPoint(0, 0))
-        x = btn_pos.x()
-        y = btn_pos.y() - popup_size.height() - self.dp(8)
+        window_bottom_left = self.mapToGlobal(QtCore.QPoint(0, self.height()))
+        x = window_bottom_left.x() + self.dp(8)
+        y = window_bottom_left.y() - popup_size.height() - self.dp(8)
         self._help_popup.move(x, y)
         self._help_popup.show()
 
