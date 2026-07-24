@@ -821,6 +821,7 @@ class Phase3Widget(QWidget):
         self.cut_to_end_mode = False
         self.auto_occluded: set = set()
         self._undo_stack: list = []
+        self._max_undo_history: int = 50  # 検出フェーズと同様に上限を設け、際限のないメモリ増加を防ぐ
         self._id_tracking: bool = False
 
         # ---- UI構築 ----
@@ -1282,6 +1283,8 @@ class Phase3Widget(QWidget):
             "cut_mode": self.cut_mode,
             "cut_to_end_mode": self.cut_to_end_mode,
         })
+        if len(self._undo_stack) > self._max_undo_history:
+            self._undo_stack.pop(0)
 
     def undo_last(self):
         if not self._undo_stack:
