@@ -288,8 +288,8 @@ class FileIOMixin:
 
         saved_at = data.get("saved_at")
         when_text = (
-            datetime.datetime.fromtimestamp(saved_at).strftime("%H:%M")
-            if saved_at else "不明な時刻"
+            datetime.datetime.fromtimestamp(saved_at).strftime("%Y-%m-%d %H:%M")
+            if saved_at else "不明な日時"
         )
 
         if not self._ask_confirm(
