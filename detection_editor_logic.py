@@ -1984,8 +1984,12 @@ class CoreLogicMixin:
         更新チェックで確認ダイアログが出ている間は、画像読み込みポップアップを
         同時に出さないようにするため、更新チェックの完了を待ってから呼び出す。
         更新適用による自動再起動の直後であれば、まず直前の状態を復元し、
-        更新チェックや画像読み込み確認は行わない。"""
+        更新チェックや画像読み込み確認は行わない。
+        それ以外の場合、前回が予期せぬエラーで終了していないか確認し、
+        あればバックアップの場所を通知したうえで復元する。"""
         if self._restore_after_restart():
+            return
+        if self._check_crash_backup_on_startup():
             return
         restarting = self.check_for_updates(silent=True)
         if not restarting:

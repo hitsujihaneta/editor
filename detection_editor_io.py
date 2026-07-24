@@ -77,6 +77,7 @@ class FileIOMixin:
                 os.replace(tmp_txt_path, txt_path)
         except Exception:
             pass
+        self._save_last_session_pointer()
 
     def _clear_recovery_file(self):
         path = self._recovery_file_path()
@@ -186,9 +187,17 @@ class FileIOMixin:
         if not folder or not os.path.isdir(folder):
             return False
 
-        self.image_folder = folder
         self.last_txt_import_folder = state.get("last_txt_import_folder", "") or ""
+        frame_idx = state.get("current_frame_index")
+        return self._load_folder_silently(
+            folder, frame_idx if isinstance(frame_idx, int) else 0
+        )
 
+    def _load_folder_silently(self, folder: str, frame_index: int = 0) -> bool:
+        """指定フォルダの画像を（ファイル選択ダイアログなどを出さずに）読み込み、
+        作業内容はクラッシュ復元用オートセーブから無条件で復元してUIを更新する。
+        更新後の自動再起動や、クラッシュ検出後の自動復元で共用する。
+        戻り値: 読み込みに成功したかどうか。"""
         exts = ("*.jpg", "*.png", "*.jpeg")
         image_paths = []
         for e in exts:
@@ -201,16 +210,17 @@ class FileIOMixin:
         image_paths.sort(key=lambda x: x[1])
         if not image_paths:
             return False
+
+        self.image_folder = folder
         self.image_paths = image_paths
         self.current_frame_index = 0
         self._initial_fit_done = False
 
-        # 作業内容(検出結果)は再起動直前に保存したオートセーブから無条件で復元する
+        # 作業内容(検出結果)は直前のオートセーブから無条件で復元する
         self._check_recovery_on_load(silent=True)
 
-        frame_idx = state.get("current_frame_index")
-        if isinstance(frame_idx, int) and 0 <= frame_idx < len(self.image_paths):
-            self.current_frame_index = frame_idx
+        if isinstance(frame_index, int) and 0 <= frame_index < len(self.image_paths):
+            self.current_frame_index = frame_index
 
         if hasattr(self, 'image_count_label'):
             self.image_count_label.setText(f"画像数: {len(self.image_paths)}")
@@ -220,6 +230,82 @@ class FileIOMixin:
         self.update_mode_label()
         self.setFocus()
         self.load_image()
+        self._save_last_session_pointer()
+        return True
+
+    # ================================================================
+    # 予期せぬ終了（クラッシュ等）の検出・通知
+    # ================================================================
+    def _last_session_pointer_path(self) -> str:
+        return os.path.join(self._repo_root(), ".marca_last_session.json")
+
+    def _save_last_session_pointer(self):
+        """現在の画像フォルダ・読み込み元を、固定の場所に記録しておく。
+        クラッシュ等で正常終了できなかった場合でも、次回起動時に「どのフォルダで
+        作業していたか」を特定できるようにするため（画像フォルダ自体はユーザーが
+        毎回選ぶ場所なので、事前に分からないと通知しようがない）。"""
+        if not self.image_folder:
+            return
+        try:
+            pointer = {
+                "image_folder": self.image_folder,
+                "last_txt_import_folder": self.last_txt_import_folder,
+            }
+            with open(self._last_session_pointer_path(), "w", encoding="utf-8") as f:
+                json.dump(pointer, f, ensure_ascii=False)
+        except Exception:
+            pass
+
+    def _check_crash_backup_on_startup(self) -> bool:
+        """起動時に呼ぶ。前回のセッションが保存されないまま終了した形跡（クラッシュ等）
+        があれば、いつ時点までのバックアップがどこにあるかを通知し、希望すれば
+        そのフォルダを読み込んで復元する。
+        戻り値: フォルダの読み込み・復元を行った場合True。"""
+        pointer_path = self._last_session_pointer_path()
+        if not os.path.exists(pointer_path):
+            return False
+        try:
+            with open(pointer_path, "r", encoding="utf-8") as f:
+                pointer = json.load(f)
+        except Exception:
+            return False
+
+        folder = pointer.get("image_folder")
+        if not folder or not os.path.isdir(folder):
+            return False
+        txt_folder = pointer.get("last_txt_import_folder") or ""
+        recovery_folder = txt_folder or folder
+        recovery_path = os.path.join(recovery_folder, ".marca_autosave.json")
+        if not os.path.exists(recovery_path):
+            # 前回きちんと保存できていた等、バックアップが残っていなければ何もしない
+            return False
+
+        try:
+            with open(recovery_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            return False
+
+        saved_at = data.get("saved_at")
+        when_text = (
+            datetime.datetime.fromtimestamp(saved_at).strftime("%H:%M")
+            if saved_at else "不明な時刻"
+        )
+
+        if not self._ask_confirm(
+            "予期せぬ終了を検出しました",
+            "前回、保存されないまま予期せぬエラーでシステムが終了した可能性があります。\n\n"
+            f"{when_text} 時点までの制作物のバックアップを、以下のフォルダに保存しています：\n"
+            f"{recovery_folder}\n\n"
+            "このフォルダを読み込んで復元しますか？",
+            yes_text="読み込んで復元する", no_text="あとで",
+        ):
+            return False
+
+        self.last_txt_import_folder = txt_folder
+        if not self._load_folder_silently(folder):
+            QtWidgets.QMessageBox.warning(self, "警告", "指定フォルダに画像ファイルが見つかりませんでした。")
+            return False
         return True
 
     def _json_path_for_image(self, img_path: str):
@@ -804,6 +890,9 @@ class FileIOMixin:
 
         # 通常の読み込みが終わった後、より新しい自動保存データが無いか確認する
         self._check_recovery_on_load()
+
+        # クラッシュ検出用に、現在のフォルダを固定の場所に記録しておく
+        self._save_last_session_pointer()
 
         # 画像読み込み成功後、操作UIに切り替える
         self.sidebar_stack.setCurrentIndex(1)
