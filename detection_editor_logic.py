@@ -1022,7 +1022,7 @@ class CoreLogicMixin:
         if not hasattr(self, 'jump_frame_input'):
              return # UIが未ロード
              
-        frame_text = self.jump_frame_input.text().strip()
+        frame_text = unicodedata.normalize("NFKC", self.jump_frame_input.text().strip())  # 全角入力を半角に正規化
         if not frame_text:
             QtWidgets.QMessageBox.warning(self, "入力エラー", "フレーム番号を入力してください。")
             return

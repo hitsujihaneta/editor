@@ -1,5 +1,6 @@
 import copy
 import time
+import unicodedata
 from typing import Dict, List, Optional, Tuple
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtCore import QRectF, QLineF, QPointF, QTimer, pyqtSignal, Qt
@@ -1166,7 +1167,7 @@ class Phase3Widget(QWidget):
         self._seek(self.current_frame + delta)
 
     def _on_jump(self):
-        text = self.ctrl.jumpEdit.text().strip()
+        text = unicodedata.normalize("NFKC", self.ctrl.jumpEdit.text().strip())  # 全角入力を半角に正規化
         if not text.isdigit():
             QtWidgets.QMessageBox.warning(self, "入力エラー", "フレーム番号は整数で入力してください。")
             return
