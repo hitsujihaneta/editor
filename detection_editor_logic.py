@@ -1114,6 +1114,9 @@ class CoreLogicMixin:
         self.scene.addPixmap(pixmap)
         self.scene.setSceneRect(0, 0, pixmap.width(), pixmap.height())
 
+        # コピーモードON時：次フレームの枠を半透明プレビュー表示（実枠より先に描画し背面に）
+        self._draw_copy_mode_preview()
+
         # 既存の検出ボックスを描画
         frame_boxes = self.detections.get(frame_number, [])
         for i, (x, y, w, h, label) in enumerate(frame_boxes):
@@ -1212,7 +1215,10 @@ class CoreLogicMixin:
         # hover/drag関連をリセット
         self.hover_item = None
         self.hover_box_index = None
-        
+
+        # コピーモードON時：次フレームの枠を半透明プレビュー表示（実枠より先に描画し背面に）
+        self._draw_copy_mode_preview()
+
         # 既存の検出ボックスを再描画
         frame_boxes = self.detections.get(frame_number, [])
         for i, (x, y, w, h, label) in enumerate(frame_boxes):
@@ -1854,12 +1860,40 @@ class CoreLogicMixin:
         if not checked:
             self.copy_target_ids.clear()
         self.rebuild_id_list_ui()
+        self._quick_redraw_boxes()
 
     def _set_copy_target(self, id_str: str, checked: bool):
         if checked:
             self.copy_target_ids.add(id_str)
         else:
             self.copy_target_ids.discard(id_str)
+
+    def _draw_copy_mode_preview(self):
+        """コピーモードON時、次フレームに存在する全ID分の枠を半透明のプレビューとして
+        現在のフレーム上に重ねて描画する（コピー対象に選択中かどうかは問わない）。
+        遷移する前に「次フレームはどうなっているか」を見て判断できるようにするため。"""
+        if not getattr(self, 'copy_mode', False):
+            return
+        if not self.image_paths or self.current_frame_index >= len(self.image_paths) - 1:
+            return
+        next_frame_number = self.image_paths[self.current_frame_index + 1][1]
+        self._load_frame_if_needed(next_frame_number)
+        next_boxes = self.detections.get(next_frame_number, [])
+        for x, y, w, h, label in next_boxes:
+            if label in self.hidden_ids:
+                continue
+            color = self.color_for(label)
+            pen = QtGui.QPen(color, 2)
+            pen.setStyle(QtCore.Qt.DashLine)
+            brush = QtGui.QBrush(QtGui.QColor(color.red(), color.green(), color.blue(), 50))
+            rect_item = self.scene.addRect(x, y, w, h, pen, brush)
+            rect_item.setOpacity(0.5)
+            rect_item.setAcceptedMouseButtons(QtCore.Qt.NoButton)
+            text_item = self.scene.addText(f"{label}(次)")
+            text_item.setDefaultTextColor(color)
+            text_item.setPos(x, y - 20)
+            text_item.setOpacity(0.5)
+            text_item.setAcceptedMouseButtons(QtCore.Qt.NoButton)
 
     def _copy_mode_propagate(self, old_frame_number: int, new_frame_number: int):
         """コピーモードON時、Ctrl+Dで次フレームへ進む際にコピー対象IDの枠を
