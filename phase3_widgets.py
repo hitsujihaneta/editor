@@ -821,7 +821,10 @@ class Phase3Widget(QWidget):
         self.cut_to_end_mode = False
         self.auto_occluded: set = set()
         self._undo_stack: list = []
-        self._max_undo_history: int = 50  # 検出フェーズと同様に上限を設け、際限のないメモリ増加を防ぐ
+        # 1件が動画全体分のdeepcopy（検出フェーズの数百〜千倍重い）なので、
+        # 検出フェーズと同じ50件ではなく、スワップ等の粗い操作単位として
+        # 十分な深さを確保しつつメモリ天井を抑えられる20件にする
+        self._max_undo_history: int = 20
         self._id_tracking: bool = False
 
         # ---- UI構築 ----
